@@ -16,40 +16,51 @@ panel_PBMC <- py_load_object(PBMC)
 print("Loaded PBMC")
 
 
-
 impute_with_batching <- function(dataset1, dataset2, num_of_batches){
     print("Starting imputation with batching")
-
+    
     dataset1_total_entries <- nrow(dataset1)    
-    dataset1_batch_size <- dataset1_total_entries / num_of_batches
+    dataset1_batch_size <- dataset1_total_entries %/% num_of_batches
+    dataset1_last_batch <- dataset1_total_entries %% dataset1_batch_size
     
     dataset2_total_entries <- nrow(dataset2)    
-    dataset2_batch_size <- dataset2_total_entries / num_of_batches
+    dataset2_batch_size <- dataset2_total_entries %/% num_of_batches 
+    dataset2_last_batch <- dataset2_total_entries %% dataset2_batch_size 
     
     dataset1_index <- 1
     dataset2_index <- 1
-    # TODO: CHANGE
-    for (i in 1:3) {
-        print(paste("Imputing batch ", i))
-        dataset1_batch <- dataset1[dataset1_index: dataset1_index + dataset1_batch_size,]
-        dataset2_batch <- dataset2[dataset2_index: dataset2_index + dataset2_batch_size,]
+    end <- num_of_batches - 1
+    for (i in 1: end) {
+        print(paste("Imputing batch", i))
         
-        print(nrow(dataset1_batch))
-        print(nrow(dataset2_batch))
+        # Need to do assignment first for the slicing to work apparently.
+        x <- dataset1_index + dataset1_batch_size
+        y <- dataset2_index + dataset2_batch_size
         
-        dataset1_index <- dataset1_index + dataset1_batch_size
-        dataset2_index <- dataset2_index + dataset2_batch_size
+        dataset1_batch <- dataset1[dataset1_index: x,]
+        dataset2_batch <- dataset2[dataset2_index: y,]
+        
+        dataset1_index <- x
+        dataset2_index <- y
         
         imputed_panel = impute_panels(dataset1_batch, dataset2_batch)
+
         if(i == 1){
             total_imputed <- imputed_panel
         }else{
             total_imputed <- rbind(total_imputed, imputed_panel)
         }
         
-        
-        print(paste("Completed imputation of batch ", i))
+        print(paste("Completed imputation of batch", i))
     }
+    
+    # Impute the last part of both datasets
+    x <- dataset1_index + dataset1_last_batch
+    y <- dataset2_index + dataset2_last_batch
+    dataset1_batch <- dataset1[dataset1_index:x,]
+    dataset2_batch <- dataset2[dataset2_index:y,]
+    imputed_panel = impute_panels(dataset1_batch, dataset2_batch)
+    total_imputed <- rbind(total_imputed, imputed_panel)
     
     print("Completing imputation with batching")
     return(total_imputed)
@@ -76,6 +87,6 @@ impute_panels <- function(dataset1, dataset2){
     return(panel_AB)
 }
 
-imputed_panel <- impute_with_batching(panel_NSCLC, panel_PBMC, 10)
+imputed_panel <- impute_with_batching(panel_NSCLC, panel_PBMC, 32)
 
 py_save_object(imputed_panel, "imputed_data.pickle", pickle = "pickle")

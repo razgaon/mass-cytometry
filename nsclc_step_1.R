@@ -5,9 +5,9 @@ library(reticulate)
 
 use_condaenv()
 
-NSCLC <- "/nobackup1/razgaon/NSCLC"
+NSCLC <- "/nobackup1/razgaon/NSCLC_TEST_1"
 
-filename <-"NSCLC_prepared_data.pickle"
+filename <-"NSCLC_prepared_data_test.pickle"
 
 fs_NSCLC <- NSCLC %>%
   cyCombine::compile_fcs()
@@ -19,7 +19,7 @@ names(markers) <- chnls
 markernames(fs_NSCLC) <- markers
 
 
-panel_A <- prepare_data(flowset=fs_NSCLC,
+panel_A <- prepare_data(flowset=fs_NSCLC, filename_col="name",
     down_sample = F, batch_ids = "A", sample_ids = 1)
     
 py_save_object(panel_A, filename, pickle = "pickle")
